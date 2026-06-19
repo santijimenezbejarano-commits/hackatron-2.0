@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Quest — Campuslands RPG</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06060f;
+  --bg2: #0c0c20;
+  --bg3: #141430;
+  --card: #1a1a3e;
+  --cyan: #00e5ff;
+  --cyan2: #00b8cc;
+  --purple: #9b59ff;
+  --yellow: #ffd60a;
+  --green: #00ff9d;
+  --red: #ff3864;
+  --white: #f0efff;
+  --gray: #8888bb;
+  --muted: #555588;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--white); font-family: 'Nunito', sans-serif; overflow: hidden; }
+
+/* ── CANVAS WORLD ── */
+#world-canvas { display: block; position: fixed; top: 0; left: 0; }
+
+/* ── HUD ── */
+#hud {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 12px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(to bottom, rgba(6,6,15,0.9), transparent);
+  pointer-events: none;
+  z-index: 10;
+}
+#hud-title { font-family: 'Press Start 2P'; font-size: 9px; color: var(--cyan); }
+#hud-badges { font-family: 'Press Start 2P'; font-size: 8px; color: var(--yellow); }
+#hud-controls { font-family: 'Press Start 2P'; font-size: 7px; color: var(--muted); }
+
+/* ── ZONE PROMPT ── */
+#zone-prompt {
+  display: none;
+  position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+  z-index: 20; text-align: center;
+}
+.prompt-box {
+  background: rgba(10,10,30,0.95);
+  border: 2px solid var(--cyan);
+  padding: 14px 24px;
+  box-shadow: 0 0 20px rgba(0,229,255,0.3);
+}
+.prompt-zone-emoji { font-size: 28px; margin-bottom: 4px; }
+.prompt-zone-name { font-family: 'Press Start 2P'; font-size: 8px; color: var(--cyan); margin-bottom: 8px; line-height: 1.6; }
+.prompt-hint { font-family: 'Press Start 2P'; font-size: 7px; color: var(--yellow); }
+.prompt-locked { font-family: 'Press Start 2P'; font-size: 7px; color: var(--red); }
+.blink { animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+/* ── SHARED OVERLAY ── */
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(4,4,14,0.97);
+  z-index: 50;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+}
+.overlay.active { display: flex; }
+
+/* ── TITLE SCREEN ── */
+#title-screen {
+  text-align: center;
+  background: radial-gradient(ellipse at center, #0d0d30 0%, var(--bg) 70%);
+}
+.title-glow {
+  font-family: 'Press Start 2P';
+  font-size: 36px;
+  color: var(--cyan);
+  text-shadow: 0 0 30px var(--cyan), 0 0 60px rgba(0,229,255,0.4);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.title-sub { font-family: 'Press Start 2P'; font-size: 10px; color: var(--purple); letter-spacing: 4px; margin-bottom: 40px; }
+.title-story { font-size: 16px; color: var(--gray); line-height: 1.8; max-width: 580px; margin: 0 auto 40px; }
+.pixel-btn {
+  font-family: 'Press Start 2P';
+  font-size: 10px;
+  padding: 14px 30px;
+  border: 2px solid var(--cyan);
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  margin: 6px;
+  transition: all 0.15s;
+  letter-spacing: 1px;
+}
+.pixel-btn:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 20px var(--cyan); }
+.pixel-btn.yellow { border-color: var(--yellow); color: var(--yellow); }
+.pixel-btn.yellow:hover { background: var(--yellow); color: var(--bg); box-shadow: 0 0 20px var(--yellow); }
+.pixel-btn.red { border-color: var(--red); color: var(--red); }
+.pixel-btn.red:hover { background: var(--red); color: #fff; }
+.pixel-btn.purple { border-color: var(--purple); color: var(--purple); }
+.pixel-btn.purple:hover { background: var(--purple); color: #fff; }
+
+/* ── QUIZ SCREEN ── */
+#quiz-screen { overflow-y: auto; }
+.quiz-card {
+  background: var(--bg2);
+  border: 1px solid rgba(0,229,255,0.25);
+  box-shadow: 0 0 40px rgba(0,229,255,0.08);
+  padding: 32px;
+  max-width: 740px;
+  width: 100%;
+}
+.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.quiz-zone { font-family: 'Press Start 2P'; font-size: 8px; color: var(--cyan); }
+.quiz-counter { font-family: 'Press Start 2P'; font-size: 8px; color: var(--yellow); }
+.quiz-dots { display: flex; gap: 8px; margin-bottom: 20px; }
+.quiz-dot { width: 12px; height: 12px; border: 2px solid var(--muted); }
+.quiz-dot.done { background: var(--green); border-color: var(--green); }
+.quiz-dot.current { border-color: var(--yellow); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,214,10,0.4)}50%{box-shadow:0 0 0 6px rgba(255,214,10,0)} }
+.quiz-diff { font-family: 'Press Start 2P'; font-size: 7px; margin-bottom: 14px; }
+.quiz-diff.easy { color: var(--green); }
+.quiz-diff.medium { color: var(--yellow); }
+.quiz-diff.hard { color: var(--red); }
+.quiz-question {
+  font-family: 'Nunito';
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.65;
+  color: var(--white);
+  margin-bottom: 20px;
+}
+.quiz-code {
+  background: rgba(0,0,0,0.4);
+  border-left: 3px solid var(--purple);
+  padding: 14px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #aaddff;
+  margin-bottom: 20px;
+  white-space: pre;
+  overflow-x: auto;
+}
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.opt-btn {
+  font-family: 'Nunito';
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 16px;
+  border: 2px solid var(--bg3);
+  background: var(--bg3);
+  color: var(--white);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.5;
+  transition: all 0.15s;
+}
+.opt-btn:hover:not(:disabled) { border-color: var(--cyan); background: rgba(0,229,255,0.07); }
+.opt-btn.correct { border-color: var(--green) !important; background: rgba(0,255,157,0.12) !important; color: var(--green) !important; }
+.opt-btn.wrong { border-color: var(--red) !important; background: rgba(255,56,100,0.12) !important; color: var(--red) !important; }
+.opt-btn:disabled { cursor: not-allowed; }
+.quiz-feedback {
+  display: none;
+  font-family: 'Nunito';
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 16px 18px;
+  border-left: 4px solid;
+  margin-top: 4px;
+}
+.quiz-feedback.correct { border-color: var(--green); background: rgba(0,255,157,0.07); color: var(--green); }
+.quiz-feedback.wrong { border-color: var(--red); background: rgba(255,56,100,0.07); color: var(--red); }
+.quiz-next-wrap { text-align: center; margin-top: 20px; display: none; }
+.quiz-esc { font-family: 'Press Start 2P'; font-size: 7px; color: var(--muted); text-align: center; margin-top: 14px; }
+
+/* ── BADGE WIN SCREEN ── */
+#badge-screen { text-align: center; }
+.badge-box {
+  border: 2px solid var(--yellow);
+  background: var(--bg2);
+  padding: 40px;
+  max-width: 560px;
+  box-shadow: 0 0 50px rgba(255,214,10,0.2);
+  text-align: center;
+}
+.badge-emoji { font-size: 72px; margin-bottom: 16px; animation: pop 0.5s; }
+@keyframes pop { 0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)} }
+.badge-win-label { font-family: 'Press Start 2P'; font-size: 9px; color: var(--yellow); margin-bottom: 12px; }
+.badge-win-name { font-family: 'Nunito'; font-size: 22px; font-weight: 800; margin-bottom: 20px; }
+.badge-win-msg { font-family: 'Nunito'; font-size: 15px; color: var(--gray); line-height: 1.7; margin-bottom: 28px; }
+.stars { font-size: 28px; margin-bottom: 20px; }
+
+/* ── COLLECTION SCREEN ── */
+#collection-screen { overflow-y: auto; }
+.collection-title { font-family: 'Press Start 2P'; font-size: 13px; color: var(--yellow); margin-bottom: 28px; }
+.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 14px; max-width: 820px; width: 100%; margin-bottom: 24px; }
+.badge-card { border: 2px solid var(--bg3); background: var(--bg2); padding: 20px; text-align: center; transition: all 0.2s; }
+.badge-card.earned { border-color: var(--yellow); box-shadow: 0 0 12px rgba(255,214,10,0.2); }
+.badge-card:not(.earned) { opacity: 0.4; }
+.badge-card-emoji { font-size: 36px; margin-bottom: 10px; }
+.badge-card-name { font-family: 'Nunito'; font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 6px; }
+.badge-card-status { font-family: 'Press Start 2P'; font-size: 6px; }
+.badge-card.earned .badge-card-status { color: var(--yellow); }
+.badge-card:not(.earned) .badge-card-status { color: var(--muted); }
+
+/* ── PARTICLES ── */
+.star-particle { position: fixed; pointer-events: none; font-size: 18px; animation: floatUp 1.4s forwards; z-index: 200; }
+@keyframes floatUp { 0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-100px)} }
+
+@media(max-width:600px){ .quiz-options{grid-template-columns:1fr} .title-glow{font-size:20px} }
+</style>
+</head>
+<body>
+
+<!-- CANVAS -->
+<canvas id="world-canvas"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hud-title">⚔ CODE QUEST</div>
+  <div id="hud-badges">🏅 <span id="hud-badge-count">0</span>/10</div>
+  <div id="hud-controls">WASD mover · ENTER entrar</div>
+</div>
+
+<!-- ZONE PROMPT -->
+<div id="zone-prompt">
+  <div class="prompt-box">
+    <div class="prompt-zone-emoji" id="prompt-emoji"></div>
+    <div class="prompt-zone-name" id="prompt-name"></div>
+    <div id="prompt-action"></div>
+  </div>
+</div>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen" class="overlay active">
+  <div style="font-size:36px;margin-bottom:16px">⚔️ 🖥️ 🐍</div>
+  <div class="title-glow">CODE<br>QUEST</div>
+  <div class="title-sub">▸ CAMPUSLANDS RPG ◂</div>
+  <div class="title-story">
+    Eres un Aprendiz de Código en el Reino Digital.<br>
+    Explora el mundo, entra a las zonas y demuestra tu conocimiento.<br>
+    Gana insignias y conviértete en el Master Developer.
+  </div>
+  <div>
+    <button class="pixel-btn blink" onclick="startWorld()">▶ INICIAR AVENTURA</button>
+    <button class="pixel-btn yellow" onclick="showCollection()">🏅 COLECCIÓN</button>
+  </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz-screen" class="overlay">
+  <div class="quiz-card">
+    <div class="quiz-header">
+      <div class="quiz-zone" id="q-zone"></div>
+      <div class="quiz-counter" id="q-counter"></div>
+    </div>
+    <div class="quiz-dots" id="q-dots"></div>
+    <div class="quiz-diff" id="q-diff"></div>
+    <div class="quiz-question" id="q-text"></div>
+    <div class="quiz-code" id="q-code" style="display:none"></div>
+    <div class="quiz-options" id="q-options"></div>
+    <div class="quiz-feedback" id="q-feedback"></div>
+    <div class="quiz-next-wrap" id="q-next">
+      <button class="pixel-btn" onclick="nextQuestion()">SIGUIENTE ▶</button>
+    </div>
+    <div class="quiz-esc">ESC = salir de la zona</div>
+  </div>
+</div>
+
+<!-- BADGE WIN SCREEN -->
+<div id="badge-screen" class="overlay">
+  <div class="badge-box">
+    <div class="badge-emoji" id="bw-emoji"></div>
+    <div class="badge-win-label">✨ ¡INSIGNIA OBTENIDA! ✨</div>
+    <div class="badge-win-name" id="bw-name"></div>
+    <div class="stars">⭐ ⭐ ⭐</div>
+    <div class="badge-win-msg" id="bw-msg"></div>
+    <div>
+      <button class="pixel-btn yellow" onclick="showCollection()">🏅 Colección</button>
+      <button class="pixel-btn" onclick="backToWorld()">🗺️ Seguir explorando</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION SCREEN -->
+<div id="collection-screen" class="overlay" style="overflow-y:auto">
+  <div class="collection-title">🏅 COLECCIÓN DE INSIGNIAS</div>
+  <div class="badges-grid" id="badges-grid"></div>
+  <button class="pixel-btn" onclick="backToWorld()">← VOLVER AL MUNDO</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  QUESTION BANK
+// ══════════════════════════════════════════
+const ZONES = [
+  {
+    id:'linux', name:'Las Cuevas\ndel Terminal', emoji:'🐧',
+    badge:{emoji:'🐧',name:'Explorador Linux'},
+    tileX:3, tileY:3,
+    questions:[
+      {text:'¿Qué es un sistema operativo?',difficulty:'easy',options:['Programa que administra y gestiona los recursos del computador','Un lenguaje de programación de alto nivel','Una aplicación para navegar en internet','Un tipo de memoria RAM'],correct:0,explanation:'El SO actúa como intermediario entre el hardware y el usuario, gestionando procesos, memoria y dispositivos.'},
+      {text:'¿Qué comando usas para listar archivos en un directorio?',difficulty:'easy',options:['ls','cd','pwd','mkdir'],correct:0,explanation:'ls (list) muestra el contenido de un directorio. Es uno de los comandos más básicos de Linux.'},
+      {text:'¿Qué hace el comando pwd?',difficulty:'easy',options:['Muestra la ruta del directorio actual','Cambia de directorio','Crea una carpeta nueva','Lista los procesos activos'],correct:0,explanation:'pwd = Print Working Directory. Muestra exactamente en qué carpeta estás.'},
+      {text:'¿Cómo se abre la línea de comandos en Linux?',difficulty:'easy',options:['CTRL + ALT + T','CTRL + C','ALT + F4','CTRL + Z'],correct:0,explanation:'El atajo CTRL + ALT + T abre el terminal en la mayoría de distribuciones Linux.'},
+      {text:'¿Qué comando instala una app en Ubuntu/Debian?',difficulty:'medium',options:['sudo apt-get install <app>','sudo install <app>','apt download <app>','linux install <app>'],correct:0,explanation:'sudo apt-get install es el comando estándar para instalar paquetes en distribuciones basadas en Debian.'},
+      {text:'¿Qué hace el comando top?',difficulty:'medium',options:['Muestra los procesos activos en tiempo real','Muestra la parte superior de un archivo','Reinicia el sistema','Mueve archivos al inicio del directorio'],correct:0,explanation:'top es un monitor de procesos en tiempo real, similar al Administrador de Tareas de Windows.'},
+      {text:'¿Cuál es la diferencia entre sudo y su?',difficulty:'medium',options:['sudo ejecuta un comando como root; su cambia completamente de usuario','su ejecuta un comando como root; sudo cambia de usuario','Son exactamente lo mismo','sudo es para Mac y su es para Linux'],correct:0,explanation:'sudo permite ejecutar un comando con privilegios de superusuario. su cambia la sesión al usuario indicado.'},
+      {text:'¿Qué comando actualiza la LISTA de paquetes (sin instalar nada)?',difficulty:'hard',options:['sudo apt update','sudo apt upgrade','sudo apt install','sudo apt refresh'],correct:0,explanation:'apt update descarga la lista de paquetes disponibles. apt upgrade instala las actualizaciones.'},
+      {text:'Linux fue creado por:',difficulty:'easy',options:['Linus Torvalds en 1991','Bill Gates en 1985','Steve Jobs en 1984','Dennis Ritchie en 1972'],correct:0,explanation:'Linus Torvalds lanzó el kernel de Linux en 1991. Está distribuido bajo licencia GPL.'},
+      {text:'¿Qué hace rm -rf?',difficulty:'hard',options:['Elimina carpetas y su contenido de forma recursiva y forzada','Renombra un archivo remotamente','Reinicia el sistema de archivos','Restaura archivos eliminados'],correct:0,explanation:'rm -rf es peligroso: -r = recursivo, -f = forzado sin confirmación. ¡Úsalo con cuidado!'}
+    ]
+  },
+  {
+    id:'algoritmos', name:'El Bosque del\nAlgoritmo', emoji:'🌳',
+    badge:{emoji:'🌳',name:'Pensador Algorítmico'},
+    tileX:11, tileY:2,
+    questions:[
+      {text:'¿Qué es un algoritmo?',difficulty:'easy',options:['Conjunto ordenado y finito de pasos para resolver un problema','Un tipo de lenguaje de programación','Un error en el código','Una estructura de datos'],correct:0,explanation:'Un algoritmo tiene entrada, proceso y salida. Debe ser claro, preciso, finito y efectivo.'},
+      {text:'¿Qué símbolo representa una DECISIÓN en un diagrama de flujo?',difficulty:'easy',options:['Rombo (◇)','Rectángulo (□)','Óvalo (○)','Paralelogramo (▱)'],correct:0,explanation:'El rombo representa bifurcaciones de decisión (sí/no) en diagramas de flujo.'},
+      {text:'¿Qué símbolo indica el INICIO o FIN de un diagrama de flujo?',difficulty:'easy',options:['Óvalo','Rectángulo','Rombo','Flecha'],correct:0,explanation:'El óvalo (terminal) marca el inicio y fin del algoritmo en los diagramas de flujo.'},
+      {text:'Un COMPILADOR:',difficulty:'medium',options:['Traduce todo el código a lenguaje máquina antes de ejecutarlo','Ejecuta el código línea por línea en tiempo real','Solo sirve para Python y JavaScript','Corrige errores automáticamente'],correct:0,explanation:'El compilador genera un archivo ejecutable. El intérprete traduce y ejecuta en tiempo real (como Python).'},
+      {text:'¿Qué es un lenguaje de ALTO NIVEL?',difficulty:'medium',options:['Abstracto, fácil de leer y portable entre sistemas','Cercano al hardware y difícil de leer','Solo funciona en supercomputadoras','Un lenguaje sin errores de compilación'],correct:0,explanation:'Python, Java y JavaScript son alto nivel. El ensamblador es bajo nivel.'},
+      {text:'¿Cuántas partes tiene un algoritmo?',difficulty:'easy',options:['3: Entrada, Proceso, Salida','2: Variables y Funciones','4: Inicio, Nudo, Desenlace, Fin','5: Compilar, Ejecutar, Depurar, Optimizar, Lanzar'],correct:0,explanation:'Todo algoritmo recibe datos (entrada), los transforma (proceso) y produce un resultado (salida).'},
+      {text:'¿Para qué sirve el paralelogramo en un diagrama de flujo?',difficulty:'medium',options:['Representar entrada o salida de datos','Indicar el inicio del algoritmo','Mostrar una decisión','Representar un proceso o cálculo'],correct:0,explanation:'El paralelogramo (▱) es el símbolo de entrada/salida: leer datos o mostrar resultados.'},
+      {text:'GCC es un ejemplo de:',difficulty:'hard',options:['Compilador','Intérprete','Sistema operativo','Editor de código'],correct:0,explanation:'GCC (GNU Compiler Collection) es el compilador más usado para C y C++.'},
+      {text:'Tipado FUERTE significa:',difficulty:'medium',options:['Variables tienen un tipo fijo, más seguro','Variables pueden cambiar de tipo libremente','Solo para lenguajes compilados','El código se ejecuta más rápido'],correct:0,explanation:'Python es de tipado fuerte. JavaScript es de tipado débil (más flexible pero propenso a errores).'},
+      {text:'¿Cuál es una característica obligatoria de un buen algoritmo?',difficulty:'easy',options:['Debe ser finito (termina en algún momento)','Debe ser infinito para cubrir todos los casos','Solo funciona en un lenguaje específico','Requiere hardware especializado'],correct:0,explanation:'Un buen algoritmo es claro, preciso, FINITO, efectivo, eficiente e independiente del lenguaje.'}
+    ]
+  },
+  {
+    id:'variables', name:'La Bóveda de\nVariables', emoji:'🔐',
+    badge:{emoji:'🔐',name:'Guardián de Datos'},
+    tileX:20, tileY:3,
+    questions:[
+      {text:'¿Qué es una VARIABLE?',difficulty:'easy',options:['Contenedor en memoria cuyo valor puede cambiar','Un valor que nunca cambia durante la ejecución','Un tipo de bucle en programación','Una función sin parámetros'],correct:0,explanation:'Una variable almacena datos en memoria y su valor puede modificarse. Una constante es fija.'},
+      {text:'¿Qué tipo de dato almacena números CON decimales?',difficulty:'easy',options:['Float','Int','String','Boolean'],correct:0,explanation:'Float (punto flotante) almacena números decimales como 3.14 o -0.5. Int almacena enteros.'},
+      {text:'¿Cuál es el resultado de 10 % 3?',difficulty:'medium',options:['1','3','0','10'],correct:0,explanation:'10 ÷ 3 = 3 con residuo 1. El operador % devuelve el RESIDUO de la división.'},
+      {text:'¿Qué tipo de dato representa "Hola mundo"?',difficulty:'easy',options:['String','Int','Boolean','Float'],correct:0,explanation:'Un String es una cadena de caracteres (texto). Se escribe entre comillas.'},
+      {text:'¿Cuál de estos es un operador LÓGICO?',difficulty:'easy',options:['AND','+',' ==','%'],correct:0,explanation:'Los operadores lógicos son AND, OR y NOT. Trabajan con valores booleanos.'},
+      {text:'¿Qué devuelve: TRUE AND FALSE?',difficulty:'medium',options:['FALSE','TRUE','ERROR','0'],correct:0,explanation:'AND devuelve TRUE solo si AMBOS valores son verdaderos. Como uno es FALSE, el resultado es FALSE.'},
+      {text:'¿Qué hace el operador ** en programación?',difficulty:'medium',options:['Potencia (2**3 = 8)','División entera','Módulo','Multiplicación doble'],correct:0,explanation:'** es el operador de potencia. 2**3 = 2³ = 8.'},
+      {text:'¿Para qué sirve el PSEUDOCÓDIGO?',difficulty:'medium',options:['Describir un algoritmo en lenguaje informal antes de programar','Ejecutar código directamente en la computadora','Compilar programas en C++','Crear diagramas de flujo automáticamente'],correct:0,explanation:'El pseudocódigo planifica la lógica sin sintaxis específica. No es ejecutable.'},
+      {text:'¿Cuál es un operador de COMPARACIÓN?',difficulty:'easy',options:['==','AND','+','**'],correct:0,explanation:'Los operadores de comparación son ==, !=, >, <, >=, <=. Devuelven booleano.'},
+      {text:'En PSeInt, "sum <- num1 + num2" significa:',difficulty:'hard',options:['Asignar a sum el resultado de sumar num1 y num2','Comparar sum con num1 + num2','Declarar una constante llamada sum','Imprimir la suma'],correct:0,explanation:'En PSeInt, <- es el operador de ASIGNACIÓN. Guarda el resultado en la variable del lado izquierdo.'}
+    ]
+  },
+  {
+    id:'decisiones', name:'La Torre de\nDecisiones', emoji:'🗼',
+    badge:{emoji:'🗼',name:'Árbitro del Código'},
+    tileX:22, tileY:8,
+    questions:[
+      {text:'¿Cuántos tipos de estructuras de decisión existen?',difficulty:'easy',options:['3 (simple, doble, múltiple)','2 (if y else)','4','1'],correct:0,explanation:'Las 3 estructuras son: Simple (Si), Doble (Si/Sino) y Múltiple (Switch/Case).'},
+      {text:'¿Cuándo usarías Switch/Case sobre múltiples if/else?',difficulty:'medium',options:['Cuando hay muchos valores posibles para la misma variable','Cuando necesitas comparar dos variables distintas','Cuando la condición tiene operadores lógicos complejos','Solo en Java'],correct:0,explanation:'Switch/Case es ideal para comparar UNA variable contra MUCHOS valores posibles. Más legible.'},
+      {text:'¿Qué pasa si la condición del "Si Simple" es FALSA?',difficulty:'easy',options:['No se ejecuta ninguna instrucción del bloque','Se ejecutan de todas formas','El programa genera un error','Se reinicia el programa'],correct:0,explanation:'En la estructura simple, si la condición es falsa, el bloque se omite completamente.'},
+      {text:'¿Qué estructura garantiza que SIEMPRE se ejecute al menos un bloque?',difficulty:'medium',options:['Si/Sino (doble)','Si simple','Switch/Case','Ninguna'],correct:0,explanation:'En Si/Sino, si es verdad ejecuta el primer bloque; si es falsa, el "sino". Siempre corre uno.'},
+      {text:'¿Cuál cláusula en Switch/Case maneja valores no especificados?',difficulty:'medium',options:['Si-no (default)','Caso 0','Fin-Caso','Else'],correct:0,explanation:'El bloque "Si-no" en Switch/Case (equivalente a default) captura cualquier valor no contemplado.'},
+      {text:'En pseudocódigo, ¿cómo termina un bloque Si/Sino?',difficulty:'easy',options:['Fin-Si','End','Fin-Sino','Cierre-Si'],correct:0,explanation:'En PSeInt: Si... entonces / instrucciones / Si no / instrucciones / Fin-Si.'},
+      {text:'¿En qué orden se evalúan las condiciones de un if/else if encadenado?',difficulty:'medium',options:['De arriba a abajo, ejecuta el primer bloque verdadero','Evalúa todas y ejecuta todas las verdaderas','Evalúa primero la última condición','El orden es aleatorio'],correct:0,explanation:'El flujo es secuencial: en cuanto encuentra una condición verdadera, ejecuta ese bloque y salta el resto.'},
+      {text:'Para 5 opciones de una variable "dia", ¿qué usarías?',difficulty:'hard',options:['Switch/Case con 5 casos','5 estructuras Si simples','Un solo Si con condiciones AND','Una función recursiva'],correct:0,explanation:'Switch/Case es la opción más legible y mantenible cuando hay múltiples valores posibles.'}
+    ]
+  },
+  {
+    id:'bucles', name:'El Laberinto\nde Bucles', emoji:'🌀',
+    badge:{emoji:'🌀',name:'Maestro de Bucles'},
+    tileX:20, tileY:15,
+    questions:[
+      {text:'¿Cuántos tipos de estructuras repetitivas existen?',difficulty:'easy',options:['3 (Para, Mientras, Repita-Hasta)','2 (for y while)','4','1'],correct:0,explanation:'Los 3 tipos son: Para/For, Mientras/While y Repita-Hasta/Do-While.'},
+      {text:'¿Cuál bucle garantiza que su cuerpo se ejecute AL MENOS UNA VEZ?',difficulty:'medium',options:['Repita-Hasta (Do-While)','Mientras (While)','Para (For)','Todos garantizan al menos una ejecución'],correct:0,explanation:'Do-While evalúa la condición AL FINAL, así que siempre ejecuta el cuerpo mínimo una vez.'},
+      {text:'¿Cuándo usas un bucle FOR (Para)?',difficulty:'easy',options:['Cuando sabes exactamente cuántas veces repetir','Cuando no sabes cuántas veces se repetirá','Cuando la condición se evalúa al final','Solo para recorrer listas'],correct:0,explanation:'For es ideal cuando el número de iteraciones es conocido de antemano.'},
+      {text:'¿Qué ocurre si la condición de un WHILE es falsa desde el principio?',difficulty:'medium',options:['El cuerpo del bucle nunca se ejecuta','Se ejecuta una vez de todas formas','El programa entra en bucle infinito','Genera un error de compilación'],correct:0,explanation:'While evalúa la condición ANTES de ejecutar el cuerpo. Si es falsa desde el inicio, se omite.'},
+      {text:'¿Qué tipo de bucle usarías para pedir contraseña hasta que sea correcta?',difficulty:'hard',options:['Repita-Hasta (Do-While)','Para (For)','Mientras (While)','Cualquiera de los tres'],correct:0,explanation:'Do-While es ideal: pides la contraseña PRIMERO (cuerpo), luego verificas (condición). Mínimo una vez.'},
+      {text:'¿Cuál es el riesgo de un bucle WHILE mal diseñado?',difficulty:'medium',options:['Crear un bucle infinito si la condición nunca se vuelve falsa','Solo ejecutarse una vez','Saltarse la primera iteración','No compilar'],correct:0,explanation:'Si la condición del While nunca cambia a falso, el programa queda atrapado en un bucle infinito.'},
+      {text:'Para imprimir del 1 al 10, ¿qué bucle es más adecuado?',difficulty:'easy',options:['Para (For) — se sabe que son 10 iteraciones','Mientras (While) — más flexible','Repita-Hasta — garantiza ejecutarse','Son exactamente iguales'],correct:0,explanation:'For es la opción más legible para un número conocido de iteraciones.'},
+      {text:'Sintaxis del bucle Para en PSeInt:',difficulty:'medium',options:['Para var ← inicio hasta fin paso incremento haga','Para var desde inicio hasta fin','For var = inicio; var < fin; var++','Repita var veces'],correct:0,explanation:'La sintaxis completa en PSeInt: Para <var> ← <inicio> hasta <fin> paso <incremento> haga'}
+    ]
+  },
+  {
+    id:'funciones', name:'La Forja de\nFunciones', emoji:'⚙️',
+    badge:{emoji:'⚙️',name:'Artesano del Código'},
+    tileX:12, tileY:15,
+    questions:[
+      {text:'¿Qué es una función en programación?',difficulty:'easy',options:['Fragmento de código con nombre que realiza una tarea específica','Un tipo de variable que almacena múltiples valores','Una estructura de decisión avanzada','Un bucle que se ejecuta una sola vez'],correct:0,explanation:'Una función agrupa instrucciones bajo un nombre y puede invocarse múltiples veces.'},
+      {text:'¿Cuál NO es una ventaja de usar funciones?',difficulty:'medium',options:['Hace el programa más lento siempre','Reutilización de código','Modularidad','Facilidad de mantenimiento'],correct:0,explanation:'Las funciones ofrecen reutilización, modularidad, mantenimiento y legibilidad. La velocidad depende del contexto.'},
+      {text:'¿Cuál es la diferencia entre PARÁMETRO y ARGUMENTO?',difficulty:'medium',options:['Parámetro: variable en la definición. Argumento: valor real al invocar','Son exactamente lo mismo','Argumento: variable en la definición. Parámetro: valor real al invocar','Los parámetros son opcionales'],correct:0,explanation:'def suma(a, b): → a y b son PARÁMETROS. Al llamar suma(3, 5), los valores 3 y 5 son ARGUMENTOS.'},
+      {text:'¿Qué hace el RETORNO (return) de una función?',difficulty:'easy',options:['Devuelve un valor como resultado de la función','Reinicia la función desde el inicio','Imprime el resultado en pantalla','Termina el programa completo'],correct:0,explanation:'return envía el resultado de vuelta al lugar donde se llamó la función.'},
+      {text:'En PSeInt, ¿con qué palabra se define una función?',difficulty:'easy',options:['Funcion','def','function','procedure'],correct:0,explanation:'En PSeInt la sintaxis es: Funcion nombreFuncion(parametros) ... Fin Funcion'},
+      {text:'¿Qué significa "modularidad"?',difficulty:'medium',options:['Dividir el programa en partes independientes y reutilizables','Escribir todo el código en una sola función','Usar módulos externos de internet','Optimizar el uso de memoria RAM'],correct:0,explanation:'La modularidad divide un programa complejo en módulos/funciones con responsabilidades claras.'},
+      {text:'¿Cuántas partes tiene una función?',difficulty:'hard',options:['4: Definición, Parámetros, Cuerpo, Retorno','2: Nombre y cuerpo','3: Entrada, proceso, salida','5: Nombre, parámetros, variables, bucles, retorno'],correct:0,explanation:'Las 4 partes son: Definición (nombre), Parámetros (entrada), Cuerpo (instrucciones) y Retorno (resultado).'},
+      {text:'Una función puede ser invocada:',difficulty:'easy',options:['Múltiples veces desde cualquier parte del código','Solo una vez por programa','Solo desde dentro de otra función','Solo desde el inicio del programa'],correct:0,explanation:'Una de las principales ventajas es REUTILIZAR las funciones tantas veces como necesites.'}
+    ]
+  },
+  {
+    id:'git', name:'El Glaciar\nde Git', emoji:'🧊',
+    badge:{emoji:'🧊',name:'Viajero del Tiempo'},
+    tileX:5, tileY:15,
+    questions:[
+      {text:'¿Qué es Git?',difficulty:'easy',options:['Sistema de control de versiones distribuido','Plataforma web para alojar código','Un lenguaje de programación','Un editor de código de Microsoft'],correct:0,explanation:'Git es el sistema de control de versiones. GitHub es la plataforma web que lo usa. Son diferentes.'},
+      {text:'¿Quién creó Git y en qué año?',difficulty:'medium',options:['Linus Torvalds en 2005','Bill Gates en 1995','GitHub Inc. en 2008','Microsoft en 2018'],correct:0,explanation:'Linus Torvalds (el mismo creador de Linux) creó Git en 2005 para el kernel de Linux.'},
+      {text:'¿Qué hace "git config --global user.email correo"?',difficulty:'medium',options:['Configura el email del desarrollador globalmente en Git','Envía un correo con los cambios','Crea una cuenta en GitHub','Conecta el repositorio a un servidor remoto'],correct:0,explanation:'git config --global user.email establece la identidad del desarrollador para todos los commits.'},
+      {text:'¿Qué significa que Git sea DISTRIBUIDO (DVCS)?',difficulty:'medium',options:['Cada desarrollador tiene una copia completa del historial','El código solo existe en un servidor central','Solo un desarrollador puede trabajar a la vez','Los archivos se distribuyen por email'],correct:0,explanation:'En DVCS, cada desarrollador tiene el repositorio completo localmente. Pueden trabajar sin conexión.'},
+      {text:'¿GitHub fue adquirido por qué empresa?',difficulty:'easy',options:['Microsoft en 2018','Google en 2015','Apple en 2020','Amazon en 2019'],correct:0,explanation:'Microsoft adquirió GitHub en 2018 por 7.5 mil millones de dólares.'},
+      {text:'VS Code fue creado por:',difficulty:'easy',options:['Microsoft','Google','JetBrains','GitHub'],correct:0,explanation:'Visual Studio Code es un editor gratuito y de código abierto desarrollado por Microsoft.'},
+      {text:'El control de versiones permite:',difficulty:'easy',options:['Regresar a versiones anteriores del código','Compilar código automáticamente','Depurar errores en tiempo real','Crear bases de datos'],correct:0,explanation:'El control de versiones guarda el historial de cambios y facilita el trabajo en equipo.'},
+      {text:'¿Qué comando configura el editor para Git?',difficulty:'hard',options:['git config --global core.editor "code --wait"','git set editor vscode','git editor --use vscode','code --git-editor'],correct:0,explanation:'git config --global core.editor establece VS Code como editor. --wait hace que Git espere hasta cerrarlo.'}
+    ]
+  },
+  {
+    id:'python', name:'Las Llanuras\nde Python', emoji:'🐍',
+    badge:{emoji:'🐍',name:'Pythonista'},
+    tileX:1, tileY:11,
+    questions:[
+      {text:'¿Qué tipo de lenguaje es Python?',difficulty:'easy',options:['Interpretado, de tipado dinámico y multiplataforma','Compilado, de tipado estático','Solo sirve para inteligencia artificial','Un lenguaje de bajo nivel'],correct:0,explanation:'Python es interpretado, de tipado dinámico y corre en múltiples sistemas operativos.'},
+      {text:'¿Cuál es la palabra clave para definir una función en Python?',difficulty:'easy',options:['def','function','Funcion','func'],correct:0,explanation:'En Python: def nombre_funcion(parametros): y el cuerpo va indentado.'},
+      {text:'¿Qué devuelve una función Python sin "return"?',difficulty:'medium',options:['None','0','False','Error'],correct:0,explanation:'Sin return explícito, Python retorna None automáticamente.'},
+      {text:'¿Qué hace la palabra "global" dentro de una función?',difficulty:'medium',options:['Permite modificar una variable definida fuera de la función','Declara una variable disponible en internet','Importa módulos globales','Hace la función accesible desde otros archivos'],correct:0,explanation:'global indica que se quiere usar y modificar una variable del ámbito global.'},
+      {text:'¿Qué es el casting EXPLÍCITO en Python?',difficulty:'medium',options:['Convertir manualmente un tipo con int(), str(), float()','Python convierte automáticamente entre tipos','Declarar el tipo de una variable al crearla','Importar un módulo de conversión'],correct:0,explanation:'Casting explícito: el programador convierte manualmente. Implícito: Python lo hace solo.'},
+      {text:'¿Cómo se escribe una constante en Python por convención?',difficulty:'easy',options:['EN_MAYÚSCULAS','con_guiones','enCamelCase','con_punto.final'],correct:0,explanation:'Por convención PEP 8, las constantes en Python se escriben en SNAKE_CASE_MAYÚSCULAS.'},
+      {text:'¿Qué son argumentos POSICIONALES en Python?',difficulty:'hard',options:['Los que se pasan en el orden definido en la función','Los que tienen un valor por defecto','Los que se pasan con nombre=valor','Los argumentos opcionales'],correct:0,explanation:'Posicionales: suma(3, 5) — van en orden. Nominales: suma(b=5, a=3) — se especifica el nombre.'},
+      {text:'Ventaja principal de Python sobre lenguajes compilados:',difficulty:'medium',options:['Sintaxis más limpia y legible, sin punto y coma ni llaves','Mucho más rápido en ejecución','Tipado estático que previene errores','Solo funciona en servidores Linux'],correct:0,explanation:'Python prioriza la legibilidad. La desventaja es que es más lento que compilados como C++.'}
+    ]
+  },
+  {
+    id:'datos', name:'La Mazmorra\nde Datos', emoji:'🏰',
+    badge:{emoji:'🏰',name:'Arquitecto de Datos'},
+    tileX:1, tileY:6,
+    questions:[
+      {text:'¿Cuál es la diferencia entre Lista y Tupla en Python?',difficulty:'medium',options:['Lista es mutable (se puede cambiar), Tupla es inmutable','Tupla es mutable, Lista es inmutable','Son exactamente lo mismo','Las listas solo almacenan números'],correct:0,explanation:'Lista [ ] → mutable, puedes agregar/cambiar/eliminar. Tupla ( ) → inmutable, una vez creada no se modifica.'},
+      {text:'¿Cuál es el índice del PRIMER elemento de una lista?',difficulty:'easy',options:['0','1','-1','El primero no tiene índice'],correct:0,explanation:'En Python los índices comienzan en 0. mi_lista[0] es el primer elemento.'},
+      {text:'¿Qué característica tienen los CONJUNTOS (sets)?',difficulty:'medium',options:['No permiten duplicados y no mantienen orden','Permiten duplicados pero mantienen orden','Son inmutables como las tuplas','Solo almacenan números enteros'],correct:0,explanation:'Los sets son colecciones sin duplicados y sin orden garantizado.'},
+      {text:'¿Qué devuelve set([5, 4, 6, 8, 8, 1])?',difficulty:'medium',options:['{1, 4, 5, 6, 8}','[5, 4, 6, 8, 8, 1]','[1, 4, 5, 6, 8]','Error por duplicados'],correct:0,explanation:'El set elimina el 8 duplicado. El orden puede variar ya que los sets no son ordenados.'},
+      {text:'¿Cómo accedes al valor de una clave en un diccionario?',difficulty:'easy',options:['dict["clave"] o dict.get("clave")','dict.clave','dict->clave','dict(clave)'],correct:0,explanation:'Dos formas: corchetes dict["clave"] (lanza KeyError si no existe) o .get("clave") (retorna None).'},
+      {text:'¿Cómo se itera sobre CLAVE y VALOR de un diccionario?',difficulty:'medium',options:['for clave, valor in dict.items()','for item in dict','for clave in dict.keys() and valor in dict.values()','dict.iterate()'],correct:0,explanation:'.items() retorna pares (clave, valor). .keys() solo claves, .values() solo valores.'},
+      {text:'BubbleSort compara:',difficulty:'medium',options:['Cada elemento con el siguiente e intercambia si están en orden incorrecto','El primer elemento con todos los demás','Divide la lista en mitades recursivamente','Busca el mínimo y lo coloca al inicio'],correct:0,explanation:'BubbleSort recorre comparando pares adyacentes. Es O(n²), simple pero ineficiente para listas grandes.'},
+      {text:'¿Qué método agrega un elemento al FINAL de una lista?',difficulty:'easy',options:['append()','add()','push()','insert()'],correct:0,explanation:'lista.append(elemento) agrega al final. insert(indice, elemento) agrega en posición específica.'},
+      {text:'Un diccionario en Python tiene claves:',difficulty:'easy',options:['Únicas (no pueden repetirse)','Que pueden duplicarse','Solo de tipo string','Solo de tipo número'],correct:0,explanation:'Las claves de un diccionario son ÚNICAS. El segundo valor sobreescribe si se repite la clave.'},
+      {text:'¿Cuál algoritmo divide la lista en mitades recursivamente?',difficulty:'hard',options:['MergeSort','BubbleSort','SelectionSort','InsertionSort'],correct:0,explanation:'MergeSort divide en mitades, ordena recursivamente y une. Es O(n log n), más eficiente que BubbleSort.'}
+    ]
+  },
+  {
+    id:'archivos', name:'Los Archivos\ndel Saber', emoji:'📚',
+    badge:{emoji:'📚',name:'Guardián del Saber'},
+    tileX:11, tileY:10,
+    questions:[
+      {text:'¿Qué hace open(file, "w") en Python?',difficulty:'easy',options:['Abre un archivo para escritura (sobreescribe el contenido)','Abre un archivo solo para lectura','Agrega contenido al final del archivo','Crea un directorio nuevo'],correct:0,explanation:'Modo "w" (write): abre para escritura y BORRA el contenido previo. "a" agrega sin borrar.'},
+      {text:'¿Cuál es la diferencia entre "r" y "a" en open()?',difficulty:'medium',options:['"r" lee el archivo, "a" agrega contenido al final sin borrar','"r" escribe, "a" lee','Son sinónimos en Python 3','"r" abre en binario, "a" en texto'],correct:0,explanation:'"r" = read (leer), "w" = write (sobreescribir), "a" = append (agregar al final).'},
+      {text:'¿Para qué sirve el módulo json en Python?',difficulty:'medium',options:['Leer y escribir datos en formato JSON','Conectar Python a internet','Crear interfaces gráficas','Ordenar listas de diccionarios'],correct:0,explanation:'El módulo json provee json.loads() (string → objeto Python) y json.dumps() (objeto → string JSON).'},
+      {text:'¿Qué bloque se ejecuta SIEMPRE en try/except?',difficulty:'medium',options:['finally','else','except','try'],correct:0,explanation:'finally se ejecuta SIEMPRE, haya o no excepción. Útil para cerrar archivos o conexiones.'},
+      {text:'¿Qué excepción se lanza al convertir "hola" a int?',difficulty:'medium',options:['ValueError','TypeError','KeyError','IndexError'],correct:0,explanation:'int("hola") lanza ValueError: el valor no es válido para la conversión.'},
+      {text:'¿Qué hace "from mi_modulo import procesar"?',difficulty:'medium',options:['Importa solo la función procesar del módulo','Importa todo el módulo','Crea una copia del módulo','Renombra el módulo como procesar'],correct:0,explanation:'from...import permite importar solo partes específicas del módulo. Más eficiente.'},
+      {text:'¿Cuándo se ejecuta el bloque "else" en try/except?',difficulty:'hard',options:['Solo cuando NO se lanzó ninguna excepción','Siempre, igual que finally','Solo cuando SÍ se lanzó una excepción','Nunca, else no existe en try/except'],correct:0,explanation:'else en try/except corre solo si el bloque try completó sin excepciones.'},
+      {text:'¿Qué es un módulo en Python?',difficulty:'easy',options:['Archivo .py con funciones, clases y variables reutilizables','Una librería que se descarga de internet','Un tipo especial de clase en Python','Un bloque que se ejecuta automáticamente'],correct:0,explanation:'Un módulo es un archivo .py. Permite subdividir el programa en partes independientes.'},
+      {text:'¿Cuál excepción ocurre al acceder a un índice que no existe en una lista?',difficulty:'medium',options:['IndexError','KeyError','ValueError','TypeError'],correct:0,explanation:'IndexError: acceso a índice fuera de rango en lista/tupla. KeyError: clave no encontrada en diccionario.'},
+      {text:'CSV son las siglas de:',difficulty:'easy',options:['Comma-Separated Values (Valores separados por comas)','Compiled Script Variables','Common Syntax Variables','Cloud Storage Variables'],correct:0,explanation:'CSV es un formato de texto plano donde los valores se separan por comas. Usado para exportar datos de Excel.'}
+    ]
+  }
+];
+
+// ══════════════════════════════════════════
+//  MAP DATA  (25 cols × 18 rows)
+//  0=grass  1=water  2=tree  3=path
+//  10-19 = zone entrance (zone index = tileVal-10)
+// ══════════════════════════════════════════
+const COLS = 25, ROWS = 18, TILE = 48;
+const MAP = [
+  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,0,2,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,2,0,0,0,2],
+  [2,0,2,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,2],
+  [2,18,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,2],
+  [2,0,0,0,0,3,0,1,1,1,1,1,1,1,1,1,1,0,0,3,0,0,0,0,2],
+  [2,0,0,0,0,3,0,1,1,1,1,1,1,1,1,1,1,0,0,3,0,0,13,0,2],
+  [2,0,0,0,0,3,0,1,1,1,1,1,1,1,1,1,1,0,0,3,0,0,0,0,2],
+  [2,0,0,0,0,3,0,0,0,0,0,19,0,0,0,0,0,0,0,3,0,0,0,0,2],
+  [2,17,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,0,0,0,0,16,0,0,0,0,0,0,15,0,0,0,0,0,0,0,14,0,0,0,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let gameState = 'title'; // title | world | quiz | badge | collection
+let currentZoneIdx = -1;
+let currentQuestions = [];
+let currentQIdx = 0;
+let sessionAnswers = [];
+
+const player = { tx:12, ty:13, px:12*48, py:13*48, dir:'down', animFrame:0 };
+const keys = {};
+let lastMoveTime = 0;
+const MOVE_DELAY = 160;
+let nearZoneIdx = -1;
+let animTick = 0;
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem('cq2_state')) || { badges:{}, weaknesses:{} }; }
+  catch { return { badges:{}, weaknesses:{} }; }
+}
+function saveState(s) { localStorage.setItem('cq2_state', JSON.stringify(s)); }
+let STATE = loadState();
+
+// ══════════════════════════════════════════
+//  SCREENS
+// ══════════════════════════════════════════
+function showOverlay(id) {
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+  if(id) document.getElementById(id).classList.add('active');
+}
+
+function startWorld() {
+  showOverlay(null);
+  document.getElementById('world-canvas').style.display = 'block';
+  document.getElementById('hud').style.display = 'flex';
+  gameState = 'world';
+  updateHUD();
+  requestAnimationFrame(gameLoop);
+}
+
+function backToWorld() {
+  showOverlay(null);
+  gameState = 'world';
+  updateHUD();
+}
+
+function showCollection() {
+  const prevState = gameState;
+  gameState = 'collection';
+  const grid = document.getElementById('badges-grid');
+  grid.innerHTML = '';
+  ZONES.forEach((z, i) => {
+    const earned = !!STATE.badges[z.id];
+    const card = document.createElement('div');
+    card.className = 'badge-card' + (earned ? ' earned' : '');
+    card.innerHTML = `<div class="badge-card-emoji">${z.badge.emoji}</div>
+      <div class="badge-card-name">${z.badge.name}</div>
+      <div class="badge-card-status">${earned ? '✨ OBTENIDA' : '🔒 Pendiente'}</div>`;
+    grid.appendChild(card);
+  });
+  showOverlay('collection-screen');
+}
+
+function updateHUD() {
+  const earned = Object.values(STATE.badges).filter(Boolean).length;
+  document.getElementById('hud-badge-count').textContent = earned;
+}
+
+// ══════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════
+function gameLoop(ts) {
+  if(gameState !== 'world') { requestAnimationFrame(gameLoop); return; }
+  animTick = ts;
+
+  // Movement
+  if(ts - lastMoveTime > MOVE_DELAY) {
+    let dx = 0, dy = 0;
+    if(keys['w']||keys['W']||keys['ArrowUp'])    { dy=-1; player.dir='up'; }
+    else if(keys['s']||keys['S']||keys['ArrowDown']) { dy=1;  player.dir='down'; }
+    else if(keys['a']||keys['A']||keys['ArrowLeft']) { dx=-1; player.dir='left'; }
+    else if(keys['d']||keys['D']||keys['ArrowRight']){ dx=1;  player.dir='right'; }
+
+    if(dx||dy) {
+      const nx = player.tx+dx, ny = player.ty+dy;
+      if(isWalkable(nx,ny)) { player.tx=nx; player.ty=ny; }
+      lastMoveTime = ts;
+      player.animFrame = (player.animFrame+1)%2;
+    }
+  }
+
+  // Lerp pixel position toward tile target
+  player.px += (player.tx*TILE - player.px) * 0.18;
+  player.py += (player.ty*TILE - player.py) * 0.18;
+
+  // Check zone proximity
+  const tile = MAP[player.ty]?.[player.tx] ?? 0;
+  const zi = (tile >= 10 && tile <= 19) ? tile - 10 : -1;
+  nearZoneIdx = zi;
+  const zonePrompt = document.getElementById('zone-prompt');
+  if(zi >= 0) {
+    const z = ZONES[zi];
+    const unlocked = zi === 0 || !!STATE.badges[ZONES[zi-1].id];
+    document.getElementById('prompt-emoji').textContent = z.emoji;
+    document.getElementById('prompt-name').textContent = z.name.replace('\n',' ');
+    const act = document.getElementById('prompt-action');
+    if(unlocked) {
+      const done = !!STATE.badges[z.id];
+      act.innerHTML = `<div class="prompt-hint blink">${done ? '↵ ENTER — jugar de nuevo' : '↵ ENTER para entrar'}</div>`;
+    } else {
+      act.innerHTML = `<div class="prompt-locked">🔒 Completa la zona anterior</div>`;
+    }
+    zonePrompt.style.display = 'block';
+  } else {
+    zonePrompt.style.display = 'none';
+  }
+
+  drawWorld();
+  requestAnimationFrame(gameLoop);
+}
+
+function isWalkable(x, y) {
+  if(x<0||y<0||x>=COLS||y>=ROWS) return false;
+  const t = MAP[y][x];
+  return t !== 1 && t !== 2;
+}
+
+// ══════════════════════════════════════════
+//  WORLD RENDERING
+// ══════════════════════════════════════════
+const canvas = document.getElementById('world-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Tile color palettes
+const GRASS_COLORS = ['#1a4226','#1e4a2a','#1c4628','#204e2c'];
+const TILE_COLORS = {
+  0: null, // grass (uses per-cell variation)
+  1: '#0a1f5e', // water
+  2: '#0d2e14', // tree
+  3: '#3a2812', // path
+};
+
+// Pre-compute grass variation per cell
+const grassVariant = [];
+for(let r=0;r<ROWS;r++){
+  grassVariant[r]=[];
+  for(let c=0;c<COLS;c++){
+    grassVariant[r][c] = Math.floor((c*7+r*13+c*r*3)%4);
+  }
+}
+
+function drawWorld() {
+  const cw = canvas.width, ch = canvas.height;
+  // Camera: center on player pixel position (lerped)
+  let camX = player.px + TILE/2 - cw/2;
+  let camY = player.py + TILE/2 - ch/2;
+  camX = Math.max(0, Math.min(camX, COLS*TILE - cw));
+  camY = Math.max(0, Math.min(camY, ROWS*TILE - ch));
+
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle = '#06060f';
+  ctx.fillRect(0,0,cw,ch);
+
+  // Draw tiles
+  const startCol = Math.max(0, Math.floor(camX/TILE));
+  const endCol   = Math.min(COLS-1, Math.ceil((camX+cw)/TILE));
+  const startRow = Math.max(0, Math.floor(camY/TILE));
+  const endRow   = Math.min(ROWS-1, Math.ceil((camY+ch)/TILE));
+
+  for(let r=startRow; r<=endRow; r++) {
+    for(let c=startCol; c<=endCol; c++) {
+      const t = MAP[r][c];
+      const sx = c*TILE - camX, sy = r*TILE - camY;
+      drawTile(ctx, t, sx, sy, r, c, camX, camY);
+    }
+  }
+
+  // Draw player using lerped pixel position
+  const ppx = player.px - camX;
+  const ppy = player.py - camY;
+  drawPlayer(ctx, ppx, ppy);
+}
+
+function drawTile(ctx, t, sx, sy, row, col, camX, camY) {
+  const S = TILE;
+  if(t === 0) {
+    // Grass base
+    ctx.fillStyle = GRASS_COLORS[grassVariant[row][col]];
+    ctx.fillRect(sx, sy, S, S);
+    // Grass blades (small tufts using seed)
+    const seed = (col * 1731 + row * 997) % 1000;
+    const numBlades = 3 + (seed % 3);
+    for(let i = 0; i < numBlades; i++) {
+      const bx = sx + ((seed * (i+1) * 137) % (S-6)) + 3;
+      const by = sy + ((seed * (i+2) * 211) % (S-6)) + 3;
+      const bl = 4 + (seed % 4);
+      ctx.strokeStyle = `rgba(0,${100+((seed*i)%80)},40,0.45)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by+bl);
+      ctx.quadraticCurveTo(bx + (i%2===0?2:-2), by+bl/2, bx, by);
+      ctx.stroke();
+    }
+    // Occasional flower dot
+    if(seed % 7 === 0) {
+      const fx = sx + (seed * 83 % (S-8)) + 4;
+      const fy = sy + (seed * 67 % (S-8)) + 4;
+      ctx.fillStyle = seed%2===0 ? 'rgba(255,214,10,0.7)' : 'rgba(0,255,157,0.5)';
+      ctx.beginPath(); ctx.arc(fx, fy, 2, 0, Math.PI*2); ctx.fill();
+    }
+  } else if(t === 1) {
+    // Water base
+    const wave1 = Math.sin(animTick * 0.002 + col * 0.7 + row * 0.4) * 0.5 + 0.5;
+    const wave2 = Math.sin(animTick * 0.0015 + col * 0.3 - row * 0.6 + 1.2) * 0.5 + 0.5;
+    const deepBlue = Math.floor(50 + wave1 * 25);
+    ctx.fillStyle = `rgb(8, 22, ${deepBlue + 55})`;
+    ctx.fillRect(sx, sy, S, S);
+    // Wave lines
+    for(let w = 0; w < 3; w++) {
+      const wy = sy + S * (0.2 + w*0.25);
+      const wOffset = Math.sin(animTick * 0.002 + col * 0.5 + w * 1.3) * 6;
+      const alpha = (w===1 ? wave1 : wave2) * 0.18;
+      ctx.strokeStyle = `rgba(80,200,255,${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sx, wy);
+      ctx.bezierCurveTo(sx+S*0.25+wOffset, wy-3, sx+S*0.75-wOffset, wy+3, sx+S, wy);
+      ctx.stroke();
+    }
+    // Sparkle highlight
+    if(Math.floor(animTick * 0.03 + col + row) % 17 === 0) {
+      ctx.fillStyle = 'rgba(200,240,255,0.55)';
+      ctx.beginPath();
+      ctx.arc(sx + S*0.5 + wave1*8-4, sy + S*0.4, 1.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+  } else if(t === 2) {
+    // Shadow base
+    ctx.fillStyle = '#091a0d';
+    ctx.fillRect(sx, sy, S, S);
+    // Tree shadow ellipse on ground
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(sx+S/2+3, sy+S*0.85, S*0.32, S*0.1, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Trunk
+    ctx.fillStyle = '#3d2710';
+    ctx.fillRect(sx+S*0.4, sy+S*0.55, S*0.2, S*0.42);
+    ctx.fillStyle = '#2a1a08';
+    ctx.fillRect(sx+S*0.44, sy+S*0.55, S*0.06, S*0.42);
+    // Canopy layers (dark to light)
+    const seed2 = (col*7+row*13)%1000;
+    ctx.fillStyle = '#0a2a10';
+    ctx.beginPath(); ctx.arc(sx+S/2, sy+S*0.45, S*0.38, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0f3a18';
+    ctx.beginPath(); ctx.arc(sx+S/2-3, sy+S*0.35, S*0.3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#145c22';
+    ctx.beginPath(); ctx.arc(sx+S/2+(seed2%7-3)*0.5, sy+S*0.28, S*0.22, 0, Math.PI*2); ctx.fill();
+    // Canopy highlight
+    ctx.fillStyle = 'rgba(80,255,120,0.12)';
+    ctx.beginPath(); ctx.arc(sx+S*0.38, sy+S*0.22, S*0.1, 0, Math.PI*2); ctx.fill();
+  } else if(t === 3) {
+    // Cobblestone path
+    ctx.fillStyle = '#2e2010';
+    ctx.fillRect(sx, sy, S, S);
+    // Cobblestone grid — 3×3 stones per tile
+    const stoneW = S/3, stoneH = S/3;
+    for(let sr=0; sr<3; sr++) {
+      for(let sc=0; sc<3; sc++) {
+        const offset = ((sr+col+row)%2) * 2;
+        const bx = sx + sc*stoneW + 1.5;
+        const by = sy + sr*stoneH + 1.5 + offset*0.5;
+        const bw = stoneW - 3;
+        const bh = stoneH - 3;
+        const lightness = 38 + ((sc*3+sr+col+row)%5)*4;
+        ctx.fillStyle = `hsl(28,30%,${lightness}%)`;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 2);
+        ctx.fill();
+        // Stone edge highlight
+        ctx.strokeStyle = `rgba(255,220,150,0.12)`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(bx+2, by+bh); ctx.lineTo(bx+2, by+2); ctx.lineTo(bx+bw, by+2);
+        ctx.stroke();
+      }
+    }
+  } else if(t >= 10 && t <= 19) {
+    // Zone entrance — glowing animated portal
+    const zi = t - 10;
+    const z = ZONES[zi];
+    const unlocked = zi === 0 || !!STATE.badges[ZONES[zi-1]?.id];
+    const earned   = !!STATE.badges[z.id];
+
+    // Base grass under zone
+    ctx.fillStyle = GRASS_COLORS[grassVariant[row][col]];
+    ctx.fillRect(sx, sy, S, S);
+
+    const glow = (Math.sin(animTick * 0.003 + zi) + 1) / 2;
+    const pulse = (Math.sin(animTick * 0.005 + zi * 0.7) + 1) / 2;
+    const baseColor = earned ? '#ffd60a' : unlocked ? '#00e5ff' : '#555588';
+    const baseRgba  = earned ? `255,214,10` : unlocked ? `0,229,255` : `80,80,120`;
+
+    // Outer glow
+    const grad = ctx.createRadialGradient(sx+S/2, sy+S/2, 2, sx+S/2, sy+S/2, S/2);
+    grad.addColorStop(0, `rgba(${baseRgba},${0.25+pulse*0.2})`);
+    grad.addColorStop(0.6, `rgba(${baseRgba},0.08)`);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(sx, sy, S, S);
+
+    // Rotating ring
+    const angle = animTick * 0.002 * (unlocked ? 1 : 0.3);
+    const ringR = S/2 - 5;
+    ctx.save();
+    ctx.translate(sx+S/2, sy+S/2);
+    ctx.rotate(angle);
+    for(let d = 0; d < 6; d++) {
+      const a = (d/6)*Math.PI*2;
+      const dx2 = Math.cos(a)*ringR, dy2 = Math.sin(a)*ringR;
+      ctx.fillStyle = `rgba(${baseRgba},${0.4+glow*0.4})`;
+      ctx.beginPath(); ctx.arc(dx2, dy2, 2.5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+
+    // Inner ring
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = unlocked ? 2 : 1;
+    ctx.globalAlpha = 0.7 + glow * 0.3;
+    ctx.beginPath();
+    ctx.arc(sx+S/2, sy+S/2, S/2-7, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Emoji
+    ctx.font = `${S*0.42}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(z.emoji, sx+S/2, sy+S/2);
+
+    // Status icon corner
+    if(earned) {
+      ctx.font = `${S*0.22}px serif`;
+      ctx.fillText('⭐', sx+S-12, sy+12);
+    } else if(!unlocked) {
+      ctx.font = `${S*0.22}px serif`;
+      ctx.fillText('🔒', sx+S-12, sy+12);
+    }
+
+    // Zone name label above tile (only when near)
+    if(nearZoneIdx === zi) {
+      const name = z.name.replace('\n',' ');
+      ctx.font = `bold 9px "Press Start 2P"`;
+      ctx.textAlign = 'center';
+      const tw = ctx.measureText(name).width;
+      ctx.fillStyle = 'rgba(6,6,15,0.9)';
+      ctx.beginPath();
+      ctx.roundRect(sx+S/2-tw/2-6, sy-24, tw+12, 18, 3);
+      ctx.fill();
+      ctx.fillStyle = baseColor;
+      ctx.fillText(name, sx+S/2, sy-13);
+    }
+  }
+}
+
+function drawPlayer(ctx, px, py) {
+  const S = TILE;
+  const bounce = player.animFrame === 1 ? -2 : 0;
+  const ox = px + S*0.15, oy = py + S*0.05 + bounce;
+  const pw = S*0.7, ph = S*0.85;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(px+S/2, py+S*0.95, S*0.3, S*0.08, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Body
+  ctx.fillStyle = '#1a3a7a';
+  ctx.fillRect(ox + pw*0.15, oy + ph*0.42, pw*0.7, ph*0.5);
+
+  // Shirt accent
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillRect(ox + pw*0.2, oy + ph*0.44, pw*0.6, ph*0.12);
+
+  // Head
+  ctx.fillStyle = '#f5c8a0';
+  ctx.beginPath();
+  ctx.arc(ox+pw/2, oy+ph*0.27, pw*0.28, 0, Math.PI*2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = '#3a2a10';
+  ctx.beginPath();
+  ctx.arc(ox+pw/2, oy+ph*0.18, pw*0.28, Math.PI*0.9, Math.PI*2.1);
+  ctx.fill();
+
+  // Eyes based on direction
+  ctx.fillStyle = '#222';
+  if(player.dir === 'down' || player.dir === 'up') {
+    ctx.beginPath(); ctx.arc(ox+pw*0.37, oy+ph*0.27, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ox+pw*0.63, oy+ph*0.27, 2, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Legs
+  ctx.fillStyle = '#0a1a5a';
+  const legY = oy+ph*0.78;
+  const legBounce = player.animFrame === 1 ? 2 : 0;
+  ctx.fillRect(ox+pw*0.22, legY, pw*0.25, ph*0.18+legBounce);
+  ctx.fillRect(ox+pw*0.53, legY, pw*0.25, ph*0.18+(legBounce===0?2:0));
+
+  // Feet
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(ox+pw*0.18, legY+ph*0.16+legBounce, pw*0.32, ph*0.05);
+  ctx.fillRect(ox+pw*0.50, legY+ph*0.14+(legBounce===0?2:0), pw*0.32, ph*0.05);
+}
+
+// ══════════════════════════════════════════
+//  INPUT
+// ══════════════════════════════════════════
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if((e.key === 'Enter' || e.key === ' ') && gameState === 'world') {
+    if(nearZoneIdx >= 0) {
+      const unlocked = nearZoneIdx === 0 || !!STATE.badges[ZONES[nearZoneIdx-1].id];
+      if(unlocked) enterZone(nearZoneIdx);
+    }
+  }
+  if(e.key === 'Escape' && gameState === 'quiz') {
+    backToWorld();
+  }
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// ══════════════════════════════════════════
+//  QUIZ
+// ══════════════════════════════════════════
+function enterZone(zIdx) {
+  currentZoneIdx = zIdx;
+  const z = ZONES[zIdx];
+  const weakSet = STATE.weaknesses?.[z.id] || [];
+
+  let pool = [...z.questions];
+  const weakQs = pool.filter((_,i) => weakSet.includes(i));
+  const strongQs = pool.filter((_,i) => !weakSet.includes(i));
+  shuffle(weakQs); shuffle(strongQs);
+  currentQuestions = [...weakQs, ...strongQs].slice(0, 3).map(shuffleOptions);
+  currentQIdx = 0;
+  sessionAnswers = [];
+
+  gameState = 'quiz';
+  document.getElementById('zone-prompt').style.display = 'none';
+  showOverlay('quiz-screen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const z = ZONES[currentZoneIdx];
+  const q = currentQuestions[currentQIdx];
+
+  document.getElementById('q-zone').textContent = z.emoji + ' ' + z.name.replace('\n',' ');
+  document.getElementById('q-counter').textContent = `${currentQIdx+1} / ${currentQuestions.length}`;
+
+  // Dots
+  const dots = document.getElementById('q-dots');
+  dots.innerHTML = '';
+  for(let i=0;i<currentQuestions.length;i++){
+    const d = document.createElement('div');
+    d.className = 'quiz-dot' + (i<currentQIdx?' done':'') + (i===currentQIdx?' current':'');
+    dots.appendChild(d);
+  }
+
+  // Difficulty
+  const diff = document.getElementById('q-diff');
+  const dmap = {easy:'▸ FÁCIL', medium:'▸▸ MEDIO', hard:'▸▸▸ DIFÍCIL'};
+  diff.textContent = dmap[q.difficulty] || '';
+  diff.className = 'quiz-diff ' + (q.difficulty||'easy');
+
+  document.getElementById('q-text').textContent = q.text;
+
+  const codeEl = document.getElementById('q-code');
+  if(q.code){ codeEl.textContent=q.code; codeEl.style.display='block'; }
+  else { codeEl.style.display='none'; }
+
+  const opts = document.getElementById('q-options');
+  opts.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<strong>${letters[i]})</strong> ${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+
+  document.getElementById('q-feedback').style.display = 'none';
+  document.getElementById('q-feedback').className = 'quiz-feedback';
+  const qNext = document.getElementById('q-next');
+  qNext.innerHTML = '<button class="pixel-btn" onclick="nextQuestion()">SIGUIENTE ▶</button>';
+  qNext.style.display = 'none';
+}
+
+function selectAnswer(idx) {
+  const q = currentQuestions[currentQIdx];
+  const z = ZONES[currentZoneIdx];
+  const origIdx = z.questions.indexOf(q);
+  const correct = idx === q.correct;
+
+  // Lock buttons
+  document.querySelectorAll('.opt-btn').forEach((b,i) => {
+    b.disabled = true;
+    if(i === q.correct) b.classList.add('correct');
+    if(i === idx && !correct) b.classList.add('wrong');
+  });
+
+  // Feedback
+  const fb = document.getElementById('q-feedback');
+  fb.style.display = 'block';
+  if(correct) {
+    fb.className = 'quiz-feedback correct';
+    fb.innerHTML = `✅ <strong>¡Correcto!</strong> ${q.explanation}`;
+    spawnStars();
+    // Remove from weaknesses
+    if(!STATE.weaknesses) STATE.weaknesses = {};
+    if(STATE.weaknesses[z.id]) {
+      STATE.weaknesses[z.id] = STATE.weaknesses[z.id].filter(i => i !== origIdx);
+    }
+  } else {
+    fb.className = 'quiz-feedback wrong';
+    fb.innerHTML = `❌ <strong>Incorrecto.</strong> La respuesta correcta es: <em>"${q.options[q.correct]}"</em><br><br>${q.explanation}`;
+    // Track weakness
+    if(!STATE.weaknesses) STATE.weaknesses = {};
+    if(!STATE.weaknesses[z.id]) STATE.weaknesses[z.id] = [];
+    if(origIdx >= 0 && !STATE.weaknesses[z.id].includes(origIdx)) {
+      STATE.weaknesses[z.id].push(origIdx);
+    }
+  }
+
+  sessionAnswers.push(correct);
+  saveState(STATE);
+  document.getElementById('q-next').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQIdx++;
+  if(currentQIdx < currentQuestions.length) {
+    renderQuestion();
+  } else {
+    // End of quiz
+    const correctCount = sessionAnswers.filter(Boolean).length;
+    if(correctCount >= 2) {
+      const z = ZONES[currentZoneIdx];
+      STATE.badges[z.id] = true;
+      saveState(STATE);
+      showBadgeWon(currentZoneIdx);
+    } else {
+      // Show retry message in feedback
+      const fb = document.getElementById('q-feedback');
+      fb.style.display = 'block';
+      fb.className = 'quiz-feedback wrong';
+      fb.innerHTML = `❌ Obtuviste <strong>${correctCount}/3</strong> respuestas correctas. Necesitas al menos 2 para ganar la insignia. ¡Inténtalo de nuevo!`;
+      document.getElementById('q-next').innerHTML = `
+        <button class="pixel-btn" onclick="enterZone(${currentZoneIdx})">🔄 Reintentar</button>
+        <button class="pixel-btn red" onclick="backToWorld()">← Salir</button>`;
+      document.getElementById('q-next').style.display = 'block';
+    }
+  }
+}
+
+function showBadgeWon(zIdx) {
+  const z = ZONES[zIdx];
+  document.getElementById('bw-emoji').textContent = z.badge.emoji;
+  document.getElementById('bw-name').textContent = z.badge.name;
+  const earned = Object.values(STATE.badges).filter(Boolean).length;
+  document.getElementById('bw-msg').textContent =
+    `Has conquistado ${z.name.replace('\n',' ')}. Llevas ${earned} de ${ZONES.length} insignias. ¡Sigue explorando el Reino Digital!`;
+  showOverlay('badge-screen');
+  spawnStars(16);
+  updateHUD();
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function shuffle(arr) {
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
+function shuffleOptions(q) {
+  const indices = [0,1,2,3];
+  for(let i=3;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [indices[i],indices[j]]=[indices[j],indices[i]];
+  }
+  return {
+    ...q,
+    options: indices.map(i => q.options[i]),
+    correct: indices.indexOf(q.correct)
+  };
+}
+
+function spawnStars(count=6) {
+  const emojis = ['⭐','✨','🌟','💫','⚡'];
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.left = (Math.random()*85+5)+'vw';
+      el.style.top  = (Math.random()*60+15)+'vh';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 1400);
+    }, i*90);
+  }
+}
+</script>
+</body>
+</html>

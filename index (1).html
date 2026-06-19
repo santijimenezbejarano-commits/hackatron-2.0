@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo de IA para aprendizaje proactivo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Prototipo funcional</p>
+        <h1>Modelo de IA para aprendizaje proactivo en CampusLands</h1>
+      </div>
+      <div class="hero-actions">
+        <a class="game-link" href="/home/camper/Downloads/juego.html">Abrir juego</a>
+        <div class="risk-badge" id="riskBadge">Riesgo bajo</div>
+      </div>
+    </header>
+
+    <section class="dashboard" aria-label="Panel del modelo">
+      <aside class="panel input-panel">
+        <div class="panel-title">
+          <span>D</span>
+          <div>
+            <h2>Datos de Aprendizaje</h2>
+            <p>Señales tomadas de CampusLands para estimar deserción.</p>
+          </div>
+        </div>
+
+        <label class="control">
+          <span>Estudiante</span>
+          <select id="studentSelect"></select>
+        </label>
+
+        <div class="student-card">
+          <strong id="studentName">-</strong>
+          <small id="studentMeta">-</small>
+        </div>
+
+        <section class="student-percentages" aria-label="Porcentaje por estudiante">
+          <h3>Porcentaje de estudiantes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Codigo</th>
+                <th>Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody id="studentPercentRows"></tbody>
+          </table>
+        </section>
+
+        <input id="grade" type="hidden" value="82" disabled>
+        <input id="attendance" type="hidden" value="88" disabled>
+        <input id="assignments" type="hidden" value="76" disabled>
+        <input id="participation" type="hidden" value="70" disabled>
+        <input id="elearning" type="hidden" value="64" disabled>
+        <span id="gradeValue" hidden>82</span>
+        <span id="attendanceValue" hidden>88%</span>
+        <span id="assignmentsValue" hidden>76%</span>
+        <span id="participationValue" hidden>70%</span>
+        <span id="elearningValue" hidden>64%</span>
+      </aside>
+
+      <aside class="panel output-panel">
+        <div class="panel-title">
+          <span>R</span>
+          <div>
+            <h2>Salida del Modelo</h2>
+            <p>Acciones personalizadas sugeridas.</p>
+          </div>
+        </div>
+
+        <div class="risk-card">
+          <span>Riesgo estimado</span>
+          <strong id="riskScore">18%</strong>
+          <div class="meter">
+            <div id="meterFill"></div>
+          </div>
+        </div>
+
+        <section class="subpanel">
+          <h3>Recomendaciones Personalizadas</h3>
+          <ul id="recommendationsList"></ul>
+        </section>
+
+        <section class="subpanel">
+          <h3>Contenido en E-learning</h3>
+          <p id="contentText">Contenido avanzado y recomendaciones de profundizacion.</p>
+        </section>
+
+        <section class="subpanel support-agent">
+          <div class="support-agent__heading">
+            <h3>Agente de Fuentes de Apoyo</h3>
+            <span id="supportFocus">Esperando pregunta</span>
+          </div>
+          <ul id="supportSourcesList"></ul>
+        </section>
+      </aside>
+    </section>
+
+    <section class="workspace">
+      <div class="mentor-lab">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Mentoria personalizada</p>
+            <h2>Preguntale a la IA</h2>
+          </div>
+          <button id="askButton" type="button">Generar respuesta</button>
+        </div>
+
+        <label class="question-box" for="questionInput">
+          <span>Pregunta del estudiante</span>
+          <textarea id="questionInput" rows="4" placeholder="Escribe cualquier pregunta: codigo, proyectos, notas, tiempo, motivacion, entrevistas o bienestar."></textarea>
+        </label>
+
+        <section class="mentor-answer is-empty" id="mentorAnswerSection">
+          <h3>Respuesta IA</h3>
+          <p id="mentorAnswer"></p>
+        </section>
+      </div>
+
+      <div class="groups-lab">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Actividad competitiva</p>
+            <h2>Grupos balanceados por rendimiento</h2>
+          </div>
+          <label class="compact-control" for="groupSize">
+            <span>Tamano</span>
+            <input id="groupSize" type="number" min="2" max="5" value="3">
+          </label>
+        </div>
+
+        <div class="groups-actions">
+          <button id="groupButton" type="button">Formar grupos</button>
+          <p>Usa codigo unico, historial y nivel de rendimiento para que cada equipo quede parejo.</p>
+        </div>
+
+        <div class="groups-grid" id="groupsGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="model.js"></script>
+</body>
+</html>
